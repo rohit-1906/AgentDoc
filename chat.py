@@ -16,6 +16,7 @@ from langchain.chains import LLMChain
 from langchain.tools.retriever import create_retriever_tool
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_tools_agent,ZeroShotAgent
+from langchain.schema import Document
 # Set up LLM caching using an in-memory cache
 set_llm_cache(InMemoryCache())
 
@@ -91,15 +92,16 @@ if "chain" not in st.session_state:
 
 
 
-def process_text(text):
+def process_text(doc):
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=200
     )
-    chunks = text_splitter.split_text(text)
+    chunks = text_splitter.split_documents(doc)
 
     embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
-    knowledgeBase = FAISS.from_texts(chunks, embeddings)
+    knowledgeBase = FAISS.from_documents(chunks, embeddings)
+    
     retriever = knowledgeBase.as_retriever()
     tool = create_retriever_tool(
     retriever,
@@ -181,13 +183,18 @@ def main():
         if pdf_files:
             st.session_state.uploaded_files = pdf_files
             if "tools" not in st.session_state:
-                text = ""
+                doc = []
                 for pdf in pdf_files:
+                    text = ""
                     pdf_reader = PdfReader(pdf)
+                    i=0
                     for page in pdf_reader.pages:
+                        i=i+1
                         text += page.extract_text()
+                        doc.append(Document(page_content=text,metadata={"name":pdf.name,"page_no":i}))
+                    
 
-                tools = process_text(text)
+                tools = process_text(doc)
                 st.session_state.tools = tools
                 chain = initialize_components(st.session_state.tools)
                 st.session_state.chain = chain
