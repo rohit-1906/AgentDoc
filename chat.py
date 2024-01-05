@@ -40,7 +40,7 @@ if "conversation_history" not in st.session_state:
 if "chain" not in st.session_state:
 
     def load_openai_api_key():
-        dotenv_path = ".env"
+        dotenv_path = "openai.env"
         load_dotenv(dotenv_path)
         openai_api_key = os.getenv("OPENAI_API_KEY")
         if not openai_api_key:
