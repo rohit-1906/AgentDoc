@@ -50,17 +50,21 @@ if "chain" not in st.session_state:
     # Initialize components including ChatOpenAI model and QA chain
     def initialize_components(tools):
 
-        OpenAIModel = "gpt-3.5-turbo-16k"
+        OpenAIModel = "gpt-4"
         #memory = ConversationBufferMemory(memory_key="conversation_history")
         
-        llm = ChatOpenAI(model=OpenAIModel, temperature=0.1, openai_api_key=load_openai_api_key())
+        llm = ChatOpenAI(model=OpenAIModel, temperature=0, openai_api_key=load_openai_api_key())
                
-        prefix = """Have a conversation with a human, answering the following questions as best you can. You have access to the following tools:"""
-        suffix = """Begin!"
-
+        prefix = """Have a conversation with a human, answering the following questions as best you can. You should only use the retrieval tool and not any other: 
+                    Reminder : You have the ability to answer questions related to the document If a question is not related to the provided document or falls outside general topics. Feel free to start with greetings or general queries about the document. """
+        suffix = """Begin!" 
+        
         {chat_history}
+
         Question: {input}
+
         {agent_scratchpad}"""
+
 
         prompt = ZeroShotAgent.create_prompt(
             tools,
@@ -68,11 +72,12 @@ if "chain" not in st.session_state:
             suffix=suffix,
             input_variables=["input", "chat_history", "agent_scratchpad"],
         )
+        print(prompt)
         llm_chain = LLMChain(llm=llm, prompt=prompt)
         agent = ZeroShotAgent(llm_chain=llm_chain, tools=tools, verbose=True)
         memory = ConversationBufferMemory(memory_key="chat_history")
         agent_chain = AgentExecutor.from_agent_and_tools(
-        agent=agent, tools=tools, verbose=True, memory=memory,handle_parsing_errors=True)
+        agent=agent, tools=tools, verbose=True, memory=memory,handle_parsing_errors=True,max_iterations=4)
 
 
         return agent_chain
