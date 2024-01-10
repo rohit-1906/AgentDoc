@@ -185,12 +185,11 @@ def main():
             if "tools" not in st.session_state:
                 doc = []
                 for pdf in pdf_files:
-                    text = ""
                     pdf_reader = PdfReader(pdf)
                     i=0
                     for page in pdf_reader.pages:
                         i=i+1
-                        text += page.extract_text()
+                        text = page.extract_text()
                         doc.append(Document(page_content=text,metadata={"name":pdf.name,"page_no":i}))
                     
 
