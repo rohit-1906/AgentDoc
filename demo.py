@@ -107,7 +107,7 @@ if "chain" not in st.session_state:
         agent = ZeroShotAgent(llm_chain=llm_chain, tools=tools, verbose=True)
         memory = ConversationBufferMemory(memory_key="chat_history")
         agent_chain = AgentExecutor.from_agent_and_tools(
-        agent=agent, tools=tools, verbose=True, memory=memory,handle_parsing_errors=True,max_iterations=10,early_stopping_method='generate',max_execution_time=7)
+        agent=agent, tools=tools, verbose=True, memory=memory,handle_parsing_errors=True,max_iterations=10,early_stopping_method='generate',max_execution_time=5)
 
 
         return agent_chain
