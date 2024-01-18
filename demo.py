@@ -17,10 +17,11 @@ from langchain.tools.retriever import create_retriever_tool
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_tools_agent,ZeroShotAgent
 from langchain.schema import Document
-from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers import ContextualCompressionRetriever,SelfQueryRetriever
 from langchain.retrievers.document_compressors import CohereRerank
 from langchain.retrievers import ParentDocumentRetriever
 from langchain.storage import InMemoryStore
+from langchain.chains.query_constructor.base import AttributeInfo
 # Set up LLM caching using an in-memory cache
 set_llm_cache(InMemoryCache())
 
@@ -55,21 +56,44 @@ if "chain" not in st.session_state:
     # Initialize components including ChatOpenAI model and QA chain
     def initialize_components(tools):
 
-        OpenAIModel = "gpt-4"
+        OpenAIModel = "gpt-4-1106-preview"
         #memory = ConversationBufferMemory(memory_key="conversation_history")
         
         llm = ChatOpenAI(model=OpenAIModel, temperature=0, openai_api_key=load_openai_api_key())
                
-        prefix = """Have a conversation with a human, answering the following questions as best you can. You should only use the retrieval tool and not any other: 
-                    Reminder : You have the ability to answer questions related to the document If a question is not related to the provided document or falls outside general topics. Feel free to start with greetings or general queries about the document. """
-        suffix = """Begin!" 
-        
+        prefix = """
+        Your role is to assist in extracting information from documents to answer questions accurately. You have two powerful tools at your disposal:
+
+        1. Document Retriever: This tool excels at comprehending and extracting information from the text content of various documents. Employ it whenever the question pertains to the document's context, such as:
+
+        Key findings or themes
+        Specific details or facts
+        Explanations of concepts or events
+        Relationships between different parts of the document
+        2. Metadata Retriever: This tool specializes in retrieving information about the document itself, such as its Document name , Page. Utilize it when the question focuses on these details, for example:
+
+        Finding a document by its name or author
+        Determining the date a document was created
+        Locating specific information within a document based on page numbers or sections
+        Your task is to carefully analyze each question and determine the most appropriate tool to employ for retrieving the most relevant and accurate answer.
+
+        Additionally, a summary logic is available to condense and present key insights derived from the documents. If the question involves obtaining an overview or summary of the document content, leverage this logic for a concise response."""
+
+        suffix = """
+        Remember:
+
+        Craft your queries in a way that maximizes the effectiveness of the chosen tool.
+        Strive for clarity and precision in your responses.
+        Aim to provide the most informative and helpful answers possible, drawing upon the strengths of the available tools and logic.
+        Begin!
+
         {chat_history}
 
         Question: {input}
 
-        {agent_scratchpad}"""
-
+        {agent_scratchpad}
+        
+        Note: You should only use the tools . You should not answer the Question which is not in the Document"""
 
         prompt = ZeroShotAgent.create_prompt(
             tools,
@@ -77,12 +101,13 @@ if "chain" not in st.session_state:
             suffix=suffix,
             input_variables=["input", "chat_history", "agent_scratchpad"],
         )
-        print(prompt)
+        # print(prompt)
         llm_chain = LLMChain(llm=llm, prompt=prompt)
+
         agent = ZeroShotAgent(llm_chain=llm_chain, tools=tools, verbose=True)
         memory = ConversationBufferMemory(memory_key="chat_history")
         agent_chain = AgentExecutor.from_agent_and_tools(
-        agent=agent, tools=tools, verbose=True, memory=memory,handle_parsing_errors=True,max_iterations=10)
+        agent=agent, tools=tools, verbose=True, memory=memory,handle_parsing_errors=True,max_iterations=10,early_stopping_method='generate',max_execution_time=7)
 
 
         return agent_chain
@@ -114,7 +139,7 @@ def process_text(doc):
     vectorstore = Chroma(embedding_function = embeddings)
     retriever = ParentDocumentRetriever(
         docstore=InMemoryStore(),
-        vectorstore=vectorstore,
+        vectorstore=vectorstore,   
         parent_splitter=text_splitter,
         child_splitter=child_text_splitter
     )
@@ -123,12 +148,32 @@ def process_text(doc):
     compression_retriever = ContextualCompressionRetriever(
     base_compressor=compressor, base_retriever=retriever
 )
-    tool = create_retriever_tool(
+    tool1 = create_retriever_tool(
     compression_retriever,
     "document_retrieval_tool",
     "Retrieves relevant chunks from the document based on user question .",
 )
-    tools = [tool]
+    metadata_field_info = [
+    AttributeInfo(
+        name="source",
+        description="its the name of the parent document from where the content is generated",
+        type="string",
+    ),
+    AttributeInfo(
+        name="page",
+        description="The page number in which the content is present.",
+        type="integer",
+    ),]
+    self_retriever = SelfQueryRetriever.from_llm(
+        vectorstore=vectorstore,metadata_field_info=metadata_field_info,llm=ChatOpenAI(temperature=0),document_contents="Contains any type of data"
+    )
+    tool2 = create_retriever_tool(
+                self_retriever,
+                "Metadata_Retriever",
+                "Retrieves detailed metadata information about documents."
+    )
+    
+    tools = [tool1,tool2]
     return tools
 
 # relevance score between a question and response
@@ -142,6 +187,7 @@ def calculate_relevance_score(question, response):
 
     return relevance_score
 
+  
 # store conversation history in session state
 def store_conversation(user_query, assistant_response):
     st.session_state.conversation_history.append({"Question_number": len(st.session_state.conversation_history),"user_query": user_query, "assistant_response": assistant_response})
@@ -155,8 +201,7 @@ def display_conversation_history():
         st.sidebar.markdown("---")
 
 # Function to handle user interaction and responses
-
-
+        
 def handle_user_interaction(pdf_files, user_question):
     content_found = False
     relevant_responses = []
@@ -164,6 +209,10 @@ def handle_user_interaction(pdf_files, user_question):
     agent_executor = st.session_state.chain
 
     response = agent_executor.run(input=user_question)
+
+
+
+    
     assistant_response = response
     if response:
         with st.chat_message("assistant"):
