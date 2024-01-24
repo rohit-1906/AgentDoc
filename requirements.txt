@@ -3,6 +3,7 @@ streamlit
 faiss-cpu
 openai==0.28.1
 PyPDF2
+sqlite3 >= 3.35.0
 python-dotenv
 torch
 spacy
@@ -11,4 +12,3 @@ sentence-transformers
 lark
 langchain-community
 chromadb
-sqlite3 >= 3.35.0
