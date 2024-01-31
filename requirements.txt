@@ -18,6 +18,6 @@ pdfminer.six
 unstructured_inference
 opencv-python
 pikepdf
-
+pypdf
 
 
