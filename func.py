@@ -121,7 +121,8 @@ if "chain" not in st.session_state:
             | qa_prompt
             | llm
         )
-        return rag_chain
+        return [rag_chain,retriever]
+    
 
     # Perform initialization and store the chain in session state
     
@@ -168,12 +169,12 @@ def process_text(text_elements,image_elements):
 
     # vectorstore.add_documents(doc)
     # store.mset(list(zip(doc_id,image_elements)))
-#     compressor = CohereRerank()
-#     compression_retriever = ContextualCompressionRetriever(
-#     base_compressor=compressor, base_retriever=retriever
-# )
+    compressor = CohereRerank()
+    compression_retriever = ContextualCompressionRetriever(
+    base_compressor=compressor, base_retriever=retriever
+)
     
-    return retriever
+    return compression_retriever
 
 # relevance score between a question and response
 def calculate_relevance_score(question, response):
@@ -205,9 +206,10 @@ def handle_user_interaction(pdf_files, user_question):
     content_found = False
     relevant_responses = []
     # st.session_state.chain = initialize_components(st.session_state.tools)
-    rag_chain = st.session_state.chain
+    rag_chain = st.session_state.chain[0]
+    ret = st.session_state.chain[1]
     response = rag_chain.invoke({"question": user_question, "chat_history": st.session_state.chat_history})
-
+    st.write(ret.get_relevant_documents(user_question))
     st.session_state.chat_history.extend([HumanMessage(content=user_question), response])
     assistant_response = response.content
     if response:
