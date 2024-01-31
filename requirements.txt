@@ -11,7 +11,7 @@ transformers
 sentence-transformers
 lark
 langchain-community
-chromadb
+chromadb==0.4.9
 unstructured
 pdf2image
 pdfminer.six
