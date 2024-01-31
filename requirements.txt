@@ -20,5 +20,5 @@ opencv-python
 pikepdf
 pypdf
 unstructured_pytesseract
-
+pysqlite3-binary
 
