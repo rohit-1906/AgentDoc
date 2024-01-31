@@ -1,5 +1,4 @@
 langchain
-libgl1-mesa-glx
 streamlit
 faiss-cpu
 openai==0.28.1
