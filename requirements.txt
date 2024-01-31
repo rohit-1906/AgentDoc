@@ -20,5 +20,5 @@ opencv-python
 pikepdf
 pypdf
 unstructured_pytesseract
-tesseract-ocr
+
 
