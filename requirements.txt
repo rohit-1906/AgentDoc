@@ -13,3 +13,4 @@ lark
 langchain-community
 chromadb
 unstructured
+pdf2image
