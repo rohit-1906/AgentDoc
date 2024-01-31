@@ -11,7 +11,7 @@ transformers
 sentence-transformers
 lark
 langchain-community
-chromadb==0.4.9
+chromadb==0.3.29
 unstructured
 pdf2image
 pdfminer.six
@@ -20,5 +20,4 @@ opencv-python
 pikepdf
 pypdf
 unstructured_pytesseract
-pysqlite3-binary
 
