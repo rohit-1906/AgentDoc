@@ -1,4 +1,6 @@
 langchain
+cv2
+libgl1-mesa-glx
 streamlit
 faiss-cpu
 openai==0.28.1
@@ -18,6 +20,6 @@ pdfminer.six
 unstructured_inference
 opencv-python
 pikepdf
-
+tempfile
 
 
