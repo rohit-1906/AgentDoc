@@ -32,6 +32,7 @@ import pytesseract
 from langchain.agents import initialize_agent, AgentType
 import faiss
 import os
+import tempfile
 import uuid
 import base64
 from langchain_core.output_parsers import StrOutputParser
@@ -276,24 +277,33 @@ def summarize_image(encoded_image,llm):
     ]
     response = llm.invoke(prompt)
     return response.content
-def save_uploaded_file(uploaded_file):
+def save_uploaded_file(pdf_temp_dir,uploaded_file):
     # Create a folder to store uploaded files if it doesn't exist
-    os.makedirs("uploaded_pdfs", exist_ok=True)
+    # os.makedirs("uploaded_pdfs", exist_ok=True)
 
     # Save the file to the folder
-    file_path = os.path.join("uploaded_pdfs", uploaded_file.name)
+    file_path = os.path.join(pdf_temp_dir, uploaded_file.name)
     
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
-    return file_path   
+    return file_path
+
+def create_temp_directories():
+    # Create two temporary directories, one for images and one for PDFs
+    image_temp_dir = tempfile.mkdtemp(prefix='image_temp_') 
+    pdf_temp_dir = tempfile.mkdtemp(prefix='pdf_temp_')
+    return image_temp_dir, pdf_temp_dir
+
 def main():
     with st.sidebar.expander("Upload your PDF Documents"):
         pdf_files = st.sidebar.file_uploader(' ', type='pdf', accept_multiple_files=True)
-        input_path = os.getcwd()
-        output_path = os.path.join(os.getcwd(), "output")
+        image_temp_dir, pdf_temp_dir = create_temp_directories()
+        # input_path = 
+        # output_path = os.path.join(image_temp_dir, "output")
         if pdf_files:
             st.session_state.uploaded_files = pdf_files
+            
             if "tools" not in st.session_state:
                 doc = []
                 text_elements = []
@@ -302,7 +312,7 @@ def main():
                 for pdf in pdf_files:
                     text = ""
                     raw_pdf_elements = partition_pdf(
-                    filename=os.path.join(input_path, save_uploaded_file(pdf)),
+                    filename=save_uploaded_file(pdf_temp_dir,pdf),
                     strategy="hi_res",
                     hi_res_model_name = "detectron2_onnx",
                     extract_images_in_pdf=True,
@@ -311,7 +321,7 @@ def main():
                     max_characters=4000,
                     new_after_n_chars=3800,
                     combine_text_under_n_chars=2000,
-                    image_output_dir_path=output_path,
+                    image_output_dir_path=image_temp_dir,
                     # strategy="fast"
 )
                     
@@ -332,9 +342,9 @@ def main():
                     text_elements.append(Document(page_content=text,metadata={"Document_name":pdf.name}))
                     
                 
-                    for image_file in os.listdir(output_path):
+                    for image_file in os.listdir(image_temp_dir):
                         if image_file.endswith(('.png', '.jpg', '.jpeg')):
-                            image_path = os.path.join(output_path, image_file)
+                            image_path = os.path.join(image_temp_dir, image_file)
                             encoded_image = encode_image(image_path)
                             image_elements.append(Document(page_content=encoded_image))
                     for i, ie in enumerate(image_elements):
