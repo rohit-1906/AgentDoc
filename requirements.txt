@@ -19,5 +19,6 @@ unstructured_inference
 opencv-python
 pikepdf
 pypdf
+unstructured_pytesseract
 
 
