@@ -68,7 +68,7 @@ if "chain" not in st.session_state:
         if not openai_api_key:
             raise ValueError(f"Unable to retrieve OPENAI_API_KEY from {dotenv_path}")
         return openai_api_key
-
+ 
     # Initialize components including ChatOpenAI model and QA chain
     def initialize_components(retriever):
 
@@ -167,12 +167,12 @@ def process_text(text_elements,image_elements):
 
     # vectorstore.add_documents(doc)
     # store.mset(list(zip(doc_id,image_elements)))
-    compressor = CohereRerank()
-    compression_retriever = ContextualCompressionRetriever(
-    base_compressor=compressor, base_retriever=retriever
-)
+#     compressor = CohereRerank()
+#     compression_retriever = ContextualCompressionRetriever(
+#     base_compressor=compressor, base_retriever=retriever
+# )
     
-    return compression_retriever
+    return retriever
 
 # relevance score between a question and response
 def calculate_relevance_score(question, response):
