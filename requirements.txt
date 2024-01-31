@@ -1,5 +1,4 @@
 langchain
-cv2
 libgl1-mesa-glx
 streamlit
 faiss-cpu
