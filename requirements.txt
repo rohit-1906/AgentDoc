@@ -12,3 +12,4 @@ sentence-transformers
 lark
 langchain-community
 chromadb
+unstructured
